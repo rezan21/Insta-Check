@@ -23,6 +23,10 @@ def get_user_stat(followings_obj, followers_obj):
             "i_dont_follow_back":i_dont_follow,
             "they_dont_follow_back":they_dont_follow}
 
+def get_ff_objs(api, userId, token):
+    followings_obj = api.user_following(userId, token)
+    followers_obj = api.user_followers(userId, token)
+    return([followings_obj,followers_obj])
 
 def testFun():
     print("hey bitch")

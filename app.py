@@ -9,7 +9,7 @@ user_field = st.empty()
 pass_field = st.empty()
 loginBtn = st.empty()
 logoutBtn = st.empty()
-
+chBox = st.empty()
 if not logged_in:
     username = user_field.text_input("User (i.e: Username/Email)")
     password = pass_field.text_input("Password", type="password")
@@ -28,41 +28,34 @@ if not logged_in:
                 st.error(e)
 
 if logged_in:
-    user_field.empty() # clean up
+    # clean up
+    user_field.empty() 
     pass_field.empty()
     loginBtn.empty()
     logoutBtn = logoutBtn.button("Log Out")
-    ## functions ##
-
-    def get_following_followers_obj(user=mainUserID, token=mainToken):
-        followings_obj = api.user_following(user, token)
-        followers_obj = api.user_followers(user, token)
-        return([followings_obj,followers_obj])
-
     st.success(f"Successfuly logged in as {user}")
     st.title("Dashboard")
 
-    main_user_stat = instaHandler.get_user_stat(get_following_followers_obj()[0],get_following_followers_obj()[1])
-    st.write(main_user_stat["followers"])
+    def quick_ff_objs(userId=mainUserID, api=api, token=mainToken):
+        return(instaHandler.get_ff_objs(api=api, userId=userId, token=token))
 
-    #import someModule
-    #instaHandler.init(the_authd_user)
+    flwing_obj, flwer_obj = quick_ff_objs()
+    user_stat = instaHandler.get_user_stat(flwing_obj, flwer_obj)
+    main_followers = user_stat["followers"]
+    main_followings = user_stat["followings"]
+    main_mutuals = user_stat["mutuals"]
+    main_i_dont_follow_back = user_stat["i_dont_follow_back"]
+    main_they_dont_follow_back = user_stat["they_dont_follow_back"]
+    user_id_dict = {}
+    for user in flwing_obj["users"]:
+        user_id_dict.update({user['username']:user['pk']})
+    friends = list(user_id_dict.keys())
 
+    st.header("Analysis:")
+    st.subheader(f"Followings: {len(main_followings)}")
+    st.subheader(f"Followers: {len(main_followers)}")
+    st.subheader(f"Mutuals: {len(main_mutuals)}")
+    st.subheader(f"You're Not Following Back: {len(main_i_dont_follow_back)}")
+    st.subheader(f"They're Not Following Back: {len(main_they_dont_follow_back)}")
 
-    #instaHandler.testFun()
-
-
-
-
-    # submitBtn.button("Log Out")
-    # if submitBtn:
-    #     logged_in = False
-
-
-# if not logged_in:
-#     showLogin()
-#     logged_in = changeLogState()
-
-# if logged_in:
-#     showDashboard()
-
+    st.header("Stalking:")
