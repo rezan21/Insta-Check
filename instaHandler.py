@@ -27,6 +27,3 @@ def get_ff_objs(api, userId, token):
     followings_obj = api.user_following(userId, token)
     followers_obj = api.user_followers(userId, token)
     return([followings_obj,followers_obj])
-
-def testFun():
-    print("hey bitch")

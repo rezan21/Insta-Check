@@ -14,6 +14,7 @@ if submitBtn:
     print("running again!")
     with st.spinner("Verifying ..."):
         try:
+
             api = Client(username, password)
             mainToken = str(api.generate_uuid())
             mainUserID = api.authenticated_user_id
@@ -49,6 +50,7 @@ if submitBtn:
                 if private: flwer_privates += 1
                 if verified: flwer_verifieds += 1
 
+            # privacy stat:
             dic1 = {
             "status":["Followings", "Followings", "Followers", "Followers"],
             "Privacy" : ["Private", "Public","Private", "Public"],
@@ -58,11 +60,10 @@ if submitBtn:
                 flwer_privates,
                 (main_followers - flwer_privates)
                 ]}
-
             df1 = pd.DataFrame(dic1)
-            fig1 = px.bar(df1, x="status", y="count", color='Privacy')
+            fig1 = px.bar(df1, x="status", y="count", color='Privacy', width=630, color_discrete_sequence=["#f63266","#fcc4d3"])
 
-
+            # verification stat:
             dic2 = {
             "status":["Followings", "Followings", "Followers", "Followers"],
             "Verification" : ["Verified", "Not Verified","Verified", "Not Verified"],
@@ -72,11 +73,25 @@ if submitBtn:
                 flwer_verifieds,
                 (main_followers - flwer_verifieds)
                 ]}
-
             df2 = pd.DataFrame(dic2)
-            fig2 = px.bar(df2, x="status", y="count", color='Verification')
+            fig2 = px.bar(df2, x="status", y="count", color='Verification',width=630, color_discrete_sequence=["#f63266","#fcc4d3"])
 
-
+            y_style = dict(title='No. of Accounts', titlefont_size=16, tickfont_size=14)
+            x_style = dict(title='Status (i.e: Followings/Followers)', titlefont_size=16, tickfont_size=14)
+            leg_style = dict(x=1.0, y=1.0, bgcolor='#fff',bordercolor='#f63266')
+            
+            fig1.update_layout(
+                title='Accounts Privacy Aspect',
+                xaxis=x_style,
+                yaxis=y_style,
+                legend=leg_style)
+            fig1.layout.plot_bgcolor="#fff"
+            fig2.update_layout(
+                title='Accounts Verification Aspect',
+                xaxis=x_style,
+                yaxis=y_style,
+                legend=leg_style)
+            fig2.layout.plot_bgcolor="#fff"
 
 
             st.write(fig1)
