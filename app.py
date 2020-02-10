@@ -2,60 +2,122 @@ import streamlit as st
 import altair as alt
 from instagram_private_api import Client, ClientCompatPatch
 import instaHandler
+import pandas as pd
+import plotly.express as px
 
 
-logged_in  = False
-user_field = st.empty()
-pass_field = st.empty()
-loginBtn = st.empty()
-logoutBtn = st.empty()
-chBox = st.empty()
-if not logged_in:
-    username = user_field.text_input("User (i.e: Username/Email)")
-    password = pass_field.text_input("Password", type="password")
-    submitBtn = loginBtn.button("Log In")
-    if submitBtn:
-        with st.spinner("Verifying ..."):
-            try:
-                api = Client(username, password)
-                mainToken = str(api.generate_uuid())
-                mainUserID = api.authenticated_user_id
-                user = api.authenticated_user_name
-                #user = "rey"
-                logged_in = True
+username = st.text_input("User (i.e: Username/Email)")
+password = st.text_input("Password", type="password")
+submitBtn = st.checkbox("Log In/Out")
 
-            except Exception as e:
-                st.error(e)
+if submitBtn:
+    print("running again!")
+    with st.spinner("Verifying ..."):
+        try:
+            api = Client(username, password)
+            mainToken = str(api.generate_uuid())
+            mainUserID = api.authenticated_user_id
+            user = api.authenticated_user_name
 
-if logged_in:
-    # clean up
-    user_field.empty() 
-    pass_field.empty()
-    loginBtn.empty()
-    logoutBtn = logoutBtn.button("Log Out")
-    st.success(f"Successfuly logged in as {user}")
-    st.title("Dashboard")
+            st.success(f"Successfuly logged in as {user}")
+            st.title("Dashboard")
 
-    def quick_ff_objs(userId=mainUserID, api=api, token=mainToken):
-        return(instaHandler.get_ff_objs(api=api, userId=userId, token=token))
+            def quick_ff_objs(userId=mainUserID, api=api, token=mainToken):
+                return(instaHandler.get_ff_objs(api=api, userId=userId, token=token))
+            flwing_obj, flwer_obj = quick_ff_objs()
 
-    flwing_obj, flwer_obj = quick_ff_objs()
-    user_stat = instaHandler.get_user_stat(flwing_obj, flwer_obj)
-    main_followers = user_stat["followers"]
-    main_followings = user_stat["followings"]
-    main_mutuals = user_stat["mutuals"]
-    main_i_dont_follow_back = user_stat["i_dont_follow_back"]
-    main_they_dont_follow_back = user_stat["they_dont_follow_back"]
-    user_id_dict = {}
-    for user in flwing_obj["users"]:
-        user_id_dict.update({user['username']:user['pk']})
-    friends = list(user_id_dict.keys())
+            user_stat = instaHandler.get_user_stat(flwing_obj, flwer_obj)
+            main_followers = len(user_stat["followers"])
+            main_followings = len(user_stat["followings"])
+            main_mutuals = user_stat["mutuals"]
+            main_i_dont_follow_back = user_stat["i_dont_follow_back"]
+            main_they_dont_follow_back = user_stat["they_dont_follow_back"]
+            flwing_privates = 0
+            flwing_verifieds = 0
+            flwer_privates = 0
+            flwer_verifieds = 0
 
-    st.header("Analysis:")
-    st.subheader(f"Followings: {len(main_followings)}")
-    st.subheader(f"Followers: {len(main_followers)}")
-    st.subheader(f"Mutuals: {len(main_mutuals)}")
-    st.subheader(f"You're Not Following Back: {len(main_i_dont_follow_back)}")
-    st.subheader(f"They're Not Following Back: {len(main_they_dont_follow_back)}")
+            for i,j in enumerate(flwing_obj["users"]):
+                private = flwing_obj["users"][i]["is_private"]
+                verified = flwing_obj["users"][i]["is_verified"]
+                if private: flwing_privates += 1
+                if verified: flwing_verifieds += 1
 
-    st.header("Stalking:")
+            for i,j in enumerate(flwer_obj["users"]):
+                private = flwer_obj["users"][i]["is_private"]
+                verified = flwer_obj["users"][i]["is_verified"]
+                if private: flwer_privates += 1
+                if verified: flwer_verifieds += 1
+
+            dic1 = {
+            "status":["Followings", "Followings", "Followers", "Followers"],
+            "Privacy" : ["Private", "Public","Private", "Public"],
+            "count" : [
+                flwing_privates,
+                (main_followings - flwing_privates),
+                flwer_privates,
+                (main_followers - flwer_privates)
+                ]}
+
+            df1 = pd.DataFrame(dic1)
+            fig1 = px.bar(df1, x="status", y="count", color='Privacy')
+
+
+            dic2 = {
+            "status":["Followings", "Followings", "Followers", "Followers"],
+            "Verification" : ["Verified", "Not Verified","Verified", "Not Verified"],
+            "count" : [
+                flwing_verifieds,
+                (main_followings - flwing_verifieds),
+                flwer_verifieds,
+                (main_followers - flwer_verifieds)
+                ]}
+
+            df2 = pd.DataFrame(dic2)
+            fig2 = px.bar(df2, x="status", y="count", color='Verification')
+
+
+
+
+            st.write(fig1)
+            st.write(fig2)
+
+
+
+
+
+
+
+            user_id_dict = {"":""}
+            for user in flwing_obj["users"]:
+                user_id_dict.update({user['username']:user['pk']})
+            friends = list(user_id_dict.keys())
+
+            st.header("Analysis:")
+            st.subheader(f"Followings: {main_followings}")
+            st.subheader(f"Followers: {main_followers}")
+            st.subheader(f"Mutuals: {len(main_mutuals)}")
+            st.subheader(f"You're Not Following Back: {len(main_i_dont_follow_back)}")
+            st.subheader(f"They're Not Following Back: {len(main_they_dont_follow_back)}")
+
+            selected_friend = st.selectbox("Analyse a friend's Account:" ,friends)
+            if selected_friend != "":
+                friend_id = user_id_dict[selected_friend]
+                st.success(friend_id)
+                f_flwing_obj, f_flwer_obj = quick_ff_objs(userId=friend_id)
+                f_stat = instaHandler.get_user_stat(f_flwing_obj, f_flwer_obj)
+                f_main_followers = f_stat["followers"]
+                f_main_followings = f_stat["followings"]
+                f_main_mutuals = f_stat["mutuals"]
+                f_main_i_dont_follow_back = f_stat["i_dont_follow_back"]
+                f_main_they_dont_follow_back = f_stat["they_dont_follow_back"]
+
+                st.subheader(f"Followings: {len(f_main_followings)}")
+                st.subheader(f"Followers: {len(f_main_followers)}")
+                st.subheader(f"Mutuals: {len(f_main_mutuals)}")
+                st.subheader(f"You're Not Following Back: {len(f_main_i_dont_follow_back)}")
+                st.subheader(f"They're Not Following Back: {len(f_main_they_dont_follow_back)}")
+
+        except Exception as e:
+            st.error(e)
+
