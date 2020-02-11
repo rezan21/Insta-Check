@@ -14,15 +14,16 @@ if submitBtn:
     print("running again!")
     with st.spinner("Verifying ..."):
         try:
-
             api = Client(username, password)
             mainToken = str(api.generate_uuid())
             mainUserID = api.authenticated_user_id
             user = api.authenticated_user_name
-
             st.success(f"Successfuly logged in as {user}")
-            st.title("Dashboard")
 
+            st.title("Dashboard")
+            st.header("Analysis:")
+            st.markdown("""<div><span>Here you can find out which accounts are not following you back, or you are not following them back.</span><div> """, unsafe_allow_html=True)
+       
             def quick_ff_objs(userId=mainUserID, api=api, token=mainToken):
                 return(instaHandler.get_ff_objs(api=api, userId=userId, token=token))
             flwing_obj, flwer_obj = quick_ff_objs()
@@ -43,13 +44,11 @@ if submitBtn:
                 verified = flwing_obj["users"][i]["is_verified"]
                 if private: flwing_privates += 1
                 if verified: flwing_verifieds += 1
-
             for i,j in enumerate(flwer_obj["users"]):
                 private = flwer_obj["users"][i]["is_private"]
                 verified = flwer_obj["users"][i]["is_verified"]
                 if private: flwer_privates += 1
                 if verified: flwer_verifieds += 1
-
             # privacy stat:
             dic1 = {
             "status":["Followings", "Followings", "Followers", "Followers"],
@@ -62,7 +61,6 @@ if submitBtn:
                 ]}
             df1 = pd.DataFrame(dic1)
             fig1 = px.bar(df1, x="status", y="count", color='Privacy', width=630, color_discrete_sequence=["#f63266","#fcc4d3"])
-
             # verification stat:
             dic2 = {
             "status":["Followings", "Followings", "Followers", "Followers"],
@@ -74,12 +72,11 @@ if submitBtn:
                 (main_followers - flwer_verifieds)
                 ]}
             df2 = pd.DataFrame(dic2)
+            # graphs
             fig2 = px.bar(df2, x="status", y="count", color='Verification',width=630, color_discrete_sequence=["#f63266","#fcc4d3"])
-
             y_style = dict(title='No. of Accounts', titlefont_size=16, tickfont_size=14)
             x_style = dict(title='Status (i.e: Followings/Followers)', titlefont_size=16, tickfont_size=14)
             leg_style = dict(x=1.0, y=1.0, bgcolor='#fff',bordercolor='#f63266')
-            
             fig1.update_layout(
                 title='Accounts Privacy Aspect',
                 xaxis=x_style,
@@ -93,45 +90,18 @@ if submitBtn:
                 legend=leg_style)
             fig2.layout.plot_bgcolor="#fff"
 
+            st.text(f"Followings: {main_followings}")
+            st.text(f"Followers: {main_followers}")
+            st.text(f"Mutuals: {len(main_mutuals)}")
+            st.text(f"You're Not Following Back: {len(main_i_dont_follow_back)}")
+            st.text(main_i_dont_follow_back)
+            st.text(f"They're Not Following Back: {len(main_they_dont_follow_back)}")
+            st.text(main_they_dont_follow_back)
 
+
+            st.header("Charts:")
             st.write(fig1)
             st.write(fig2)
-
-
-
-
-
-
-
-            user_id_dict = {"":""}
-            for user in flwing_obj["users"]:
-                user_id_dict.update({user['username']:user['pk']})
-            friends = list(user_id_dict.keys())
-
-            st.header("Analysis:")
-            st.subheader(f"Followings: {main_followings}")
-            st.subheader(f"Followers: {main_followers}")
-            st.subheader(f"Mutuals: {len(main_mutuals)}")
-            st.subheader(f"You're Not Following Back: {len(main_i_dont_follow_back)}")
-            st.subheader(f"They're Not Following Back: {len(main_they_dont_follow_back)}")
-
-            selected_friend = st.selectbox("Analyse a friend's Account:" ,friends)
-            if selected_friend != "":
-                friend_id = user_id_dict[selected_friend]
-                st.success(friend_id)
-                f_flwing_obj, f_flwer_obj = quick_ff_objs(userId=friend_id)
-                f_stat = instaHandler.get_user_stat(f_flwing_obj, f_flwer_obj)
-                f_main_followers = f_stat["followers"]
-                f_main_followings = f_stat["followings"]
-                f_main_mutuals = f_stat["mutuals"]
-                f_main_i_dont_follow_back = f_stat["i_dont_follow_back"]
-                f_main_they_dont_follow_back = f_stat["they_dont_follow_back"]
-
-                st.subheader(f"Followings: {len(f_main_followings)}")
-                st.subheader(f"Followers: {len(f_main_followers)}")
-                st.subheader(f"Mutuals: {len(f_main_mutuals)}")
-                st.subheader(f"You're Not Following Back: {len(f_main_i_dont_follow_back)}")
-                st.subheader(f"They're Not Following Back: {len(f_main_they_dont_follow_back)}")
 
         except Exception as e:
             st.error(e)
